@@ -14,7 +14,13 @@
     "body-parser": "^1.18.1",
     "cors": "^2.8.4",
     "express": "^4.15.4",
+    "jsonwebtoken": "^8.5.0",
+    "mongoose": "^5.4.17",
     "morgan": "^1.8.2",
-    "nodemon": "^1.12.1"
+    "nodemon": "^1.18.10",
+    "restify": "^8.0.0",
+    "restify-cors-middleware": "^1.1.1",
+    "restify-jwt-community": "^1.0.9",
+    "restify-mongoose": "^4.0.0"
   }
 }

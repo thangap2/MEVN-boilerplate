@@ -1,83 +1,85 @@
-const express = require('express')
-const bodyParser = require('body-parser')
-const cors = require('cors')
-const morgan = require('morgan')
+var restify = require('restify');
+const rjwt = require('restify-jwt-community');
+const jwt = require('jsonwebtoken');
+var restifyMongoose = require('restify-mongoose');
+const corsMiddleware = require('restify-cors-middleware')
+const config = require('./../config/config');
+const User = require('./../models/user');
 
-const app = express()
-app.use(morgan('combined'))
-app.use(bodyParser.json())
-app.use(cors())
 
 const mongodb_conn_module = require('./mongodbConnModule');
 var db = mongodb_conn_module.connect();
 
-var Post = require("../models/post");
+const server = restify.createServer({
+	name: 'myapp',
+	version: '1.0.0'
+});
 
-app.get('/posts', (req, res) => {
-  Post.find({}, 'title description', function (error, posts) {
-	  if (error) { console.error(error); }
-	  res.send({
-			posts: posts
-		})
-	}).sort({_id:-1})
-})
+/**
+ * Middleware
+ */
+const cors = corsMiddleware({
+	//preflightMaxAge: 5, //Optional
+	origins: ['http://localhost:8080', 'http://localhost:8081'], //TODO: Set these CORS settings correctly for production
+	allowHeaders: ['Authorization'],
+	exposeHeaders: ['*']
+});
+server.pre(cors.preflight);
+server.use(cors.actual);
 
-app.post('/add_post', (req, res) => {
-	var db = req.db;
-	var title = req.body.title;
-	var description = req.body.description;
-	var new_post = new Post({
-		title: title,
-		description: description
-	})
+server.use(restify.plugins.acceptParser(server.acceptable));
+server.use(restify.plugins.queryParser());
+server.use(restify.plugins.bodyParser());
 
-	new_post.save(function (error) {
-		if (error) {
-			console.log(error)
-		}
-		res.send({
-			success: true
-		})
-	})
-})
+server.use(rjwt(config.jwt).unless({
+    path: ['/auth', '/post']
+}));
 
-app.put('/posts/:id', (req, res) => {
-	var db = req.db;
-	Post.findById(req.params.id, 'title description', function (error, post) {
-	  if (error) { console.error(error); }
 
-	  post.title = req.body.title
-	  post.description = req.body.description
-	  post.save(function (error) {
-			if (error) {
-				console.log(error)
+server.post('/auth', (req, res, next) => {
+	let {username, password	} = req.body;
+	User.findOne({username: username, password: password}, (err, obj) => {
+		try {
+			if (!err && obj) {
+				let payload = {	username: obj.username,	id: obj._id	};
+				let token = jwt.sign(payload, config.jwt.secret, {
+					expiresIn: '1d'
+				});
+
+				let {iat, exp} = jwt.decode(token);
+				res.send({iat, exp, token });
+			} else {
+				res.send("")
 			}
-			res.send({
-				success: true
-			})
-		})
-	})
-})
+		} catch (e) {
+			console.log(e)
+			res.send("")
+		}
 
-app.delete('/posts/:id', (req, res) => {
-	var db = req.db;
-	Post.remove({
-		_id: req.params.id
-	}, function(err, post){
-		if (err)
-			res.send(err)
-		res.send({
-			success: true
-		})
-	})
-})
+	});
+});
 
-app.get('/post/:id', (req, res) => {
-	var db = req.db;
-	Post.findById(req.params.id, 'title description', function (error, post) {
-	  if (error) { console.error(error); }
-	  res.send(post)
-	})
-})
 
-app.listen(process.env.PORT || 8081)
+
+/***************************************************************************** */
+//Add the API Endpoints here
+var Post = require("../models/post");
+var Employee = require("../models/employee");
+
+restifyMongoose(Post).serve('/api/posts', server);
+restifyMongoose(Employee).serve('/api/employees', server);
+restifyMongoose(User).serve('/api/users', server);
+
+
+
+
+
+/***************************************************************************** */
+server.get('/echo/:name', function (req, res, next) {
+	res.send(req.params);
+	return next();
+});
+
+server.listen(8081, function () {
+	console.log('%s listening at %s', server.name, server.url);
+});

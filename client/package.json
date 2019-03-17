@@ -15,9 +15,11 @@
   },
   "dependencies": {
     "axios": "^0.16.2",
+    "bootstrap": "^4.3.1",
     "vue": "^2.4.2",
     "vue-router": "^2.7.0",
-    "vue-sweetalert2": "^1.0.7"
+    "vue-sweetalert2": "^1.0.7",
+    "vuejs-jwt": "^1.1.0"
   },
   "devDependencies": {
     "autoprefixer": "^7.1.2",

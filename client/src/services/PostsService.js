@@ -6,15 +6,15 @@ export default {
   },
 
   addPost (params) {
-    return Api().post('add_post', params)
+    return Api().post('posts', params)
   },
 
   updatePost (params) {
-    return Api().put('posts/' + params.id, params)
+    return Api().patch('posts/' + params.id, params)
   },
 
   getPost (params) {
-    return Api().get('post/' + params.id)
+    return Api().get('posts/' + params.id)
   },
 
   deletePost (id) {
